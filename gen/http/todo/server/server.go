@@ -10,10 +10,12 @@ package server
 import (
 	"context"
 	"net/http"
+	"regexp"
 	todo "todo/gen/todo"
 
 	goahttp "goa.design/goa/v3/http"
 	goa "goa.design/goa/v3/pkg"
+	"goa.design/plugins/v3/cors"
 )
 
 // Server lists the todo service endpoint HTTP handlers.
@@ -23,6 +25,7 @@ type Server struct {
 	CreateTask         http.Handler
 	CompleteTask       http.Handler
 	RevertTask         http.Handler
+	CORS               http.Handler
 	GenHTTPOpenapiJSON http.Handler
 }
 
@@ -61,12 +64,18 @@ func New(
 			{"CreateTask", "POST", "/todo/task"},
 			{"CompleteTask", "POST", "/todo/task/{id}/complete"},
 			{"RevertTask", "POST", "/todo/task/{id}/revert"},
+			{"CORS", "OPTIONS", "/todo/list"},
+			{"CORS", "OPTIONS", "/todo/task"},
+			{"CORS", "OPTIONS", "/todo/task/{id}/complete"},
+			{"CORS", "OPTIONS", "/todo/task/{id}/revert"},
+			{"CORS", "OPTIONS", "/openapi.json"},
 			{"./gen/http/openapi.json", "GET", "/openapi.json"},
 		},
 		ListTasks:          NewListTasksHandler(e.ListTasks, mux, decoder, encoder, errhandler, formatter),
 		CreateTask:         NewCreateTaskHandler(e.CreateTask, mux, decoder, encoder, errhandler, formatter),
 		CompleteTask:       NewCompleteTaskHandler(e.CompleteTask, mux, decoder, encoder, errhandler, formatter),
 		RevertTask:         NewRevertTaskHandler(e.RevertTask, mux, decoder, encoder, errhandler, formatter),
+		CORS:               NewCORSHandler(),
 		GenHTTPOpenapiJSON: http.FileServer(fileSystemGenHTTPOpenapiJSON),
 	}
 }
@@ -80,6 +89,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.CreateTask = m(s.CreateTask)
 	s.CompleteTask = m(s.CompleteTask)
 	s.RevertTask = m(s.RevertTask)
+	s.CORS = m(s.CORS)
 }
 
 // MethodNames returns the methods served.
@@ -91,6 +101,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountCreateTaskHandler(mux, h.CreateTask)
 	MountCompleteTaskHandler(mux, h.CompleteTask)
 	MountRevertTaskHandler(mux, h.RevertTask)
+	MountCORSHandler(mux, h.CORS)
 	MountGenHTTPOpenapiJSON(mux, goahttp.Replace("", "/./gen/http/openapi.json", h.GenHTTPOpenapiJSON))
 }
 
@@ -102,7 +113,7 @@ func (s *Server) Mount(mux goahttp.Muxer) {
 // MountListTasksHandler configures the mux to serve the "todo" service
 // "listTasks" endpoint.
 func MountListTasksHandler(mux goahttp.Muxer, h http.Handler) {
-	f, ok := h.(http.HandlerFunc)
+	f, ok := HandleTodoOrigin(h).(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
 			h.ServeHTTP(w, r)
@@ -146,7 +157,7 @@ func NewListTasksHandler(
 // MountCreateTaskHandler configures the mux to serve the "todo" service
 // "createTask" endpoint.
 func MountCreateTaskHandler(mux goahttp.Muxer, h http.Handler) {
-	f, ok := h.(http.HandlerFunc)
+	f, ok := HandleTodoOrigin(h).(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
 			h.ServeHTTP(w, r)
@@ -197,7 +208,7 @@ func NewCreateTaskHandler(
 // MountCompleteTaskHandler configures the mux to serve the "todo" service
 // "completeTask" endpoint.
 func MountCompleteTaskHandler(mux goahttp.Muxer, h http.Handler) {
-	f, ok := h.(http.HandlerFunc)
+	f, ok := HandleTodoOrigin(h).(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
 			h.ServeHTTP(w, r)
@@ -248,7 +259,7 @@ func NewCompleteTaskHandler(
 // MountRevertTaskHandler configures the mux to serve the "todo" service
 // "revertTask" endpoint.
 func MountRevertTaskHandler(mux goahttp.Muxer, h http.Handler) {
-	f, ok := h.(http.HandlerFunc)
+	f, ok := HandleTodoOrigin(h).(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
 			h.ServeHTTP(w, r)
@@ -299,5 +310,50 @@ func NewRevertTaskHandler(
 // MountGenHTTPOpenapiJSON configures the mux to serve GET request made to
 // "/openapi.json".
 func MountGenHTTPOpenapiJSON(mux goahttp.Muxer, h http.Handler) {
-	mux.Handle("GET", "/openapi.json", h.ServeHTTP)
+	mux.Handle("GET", "/openapi.json", HandleTodoOrigin(h).ServeHTTP)
+}
+
+// MountCORSHandler configures the mux to serve the CORS endpoints for the
+// service todo.
+func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
+	h = HandleTodoOrigin(h)
+	mux.Handle("OPTIONS", "/todo/list", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/todo/task", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/todo/task/{id}/complete", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/todo/task/{id}/revert", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/openapi.json", h.ServeHTTP)
+}
+
+// NewCORSHandler creates a HTTP handler which returns a simple 200 response.
+func NewCORSHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+	})
+}
+
+// HandleTodoOrigin applies the CORS response headers corresponding to the
+// origin for the service todo.
+func HandleTodoOrigin(h http.Handler) http.Handler {
+	spec0 := regexp.MustCompile(".*localhost.*")
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			// Not a CORS request
+			h.ServeHTTP(w, r)
+			return
+		}
+		if cors.MatchOriginRegexp(origin, spec0) {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Vary", "Origin")
+			if acrm := r.Header.Get("Access-Control-Request-Method"); acrm != "" {
+				// We are handling a preflight request
+				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			}
+			h.ServeHTTP(w, r)
+			return
+		}
+		h.ServeHTTP(w, r)
+		return
+	})
 }

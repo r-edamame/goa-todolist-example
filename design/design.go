@@ -2,6 +2,7 @@ package design
 
 import (
 	. "goa.design/goa/v3/dsl"
+	cors "goa.design/plugins/v3/cors/dsl"
 )
 
 var _ = API("todo", func() {
@@ -24,6 +25,11 @@ var Task = Type("Task", func() {
 
 var _ = Service("todo", func() {
 	Description("todo service for management tasks")
+
+	cors.Origin("/.*localhost.*/", func() {
+		cors.Headers("Content-Type")
+		cors.Methods("GET", "POST", "OPTIONS")
+	})
 
 	Method("listTasks", func() {
 		Result(ArrayOf(Task))
