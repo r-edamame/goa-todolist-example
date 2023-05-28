@@ -1,0 +1,64 @@
+// Code generated with goa v3.11.3, DO NOT EDIT.
+//
+// todo protocol buffer definition
+//
+// Command:
+// $ goa gen todo/design
+
+syntax = "proto3";
+
+package todo;
+
+option go_package = "/todopb";
+
+// todo service for management tasks
+service Todo {
+	// CreateTask implements createTask.
+	rpc CreateTask (CreateTaskRequest) returns (CreateTaskResponse);
+	// CompleteTask implements completeTask.
+	rpc CompleteTask (CompleteTaskRequest) returns (CompleteTaskResponse);
+	// RevertTask implements revertTask.
+	rpc RevertTask (RevertTaskRequest) returns (RevertTaskResponse);
+}
+
+message CreateTaskRequest {
+	// name of task
+	optional string name = 1;
+}
+
+message CreateTaskResponse {
+	// id of task
+	optional string id = 10;
+	// name of task
+	optional string name = 11;
+	// status of task
+	optional bool completed = 12;
+}
+
+message CompleteTaskRequest {
+	// id of task
+	optional string id = 2;
+}
+
+message CompleteTaskResponse {
+	// id of task
+	optional string id = 10;
+	// name of task
+	optional string name = 11;
+	// status of task
+	optional bool completed = 12;
+}
+
+message RevertTaskRequest {
+	// id of task
+	optional string id = 3;
+}
+
+message RevertTaskResponse {
+	// id of task
+	optional string id = 10;
+	// name of task
+	optional string name = 11;
+	// status of task
+	optional bool completed = 12;
+}

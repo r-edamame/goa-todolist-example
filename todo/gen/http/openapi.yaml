@@ -1,0 +1,191 @@
+swagger: "2.0"
+info:
+    title: todo app
+    description: application for management tasks
+    version: ""
+host: localhost:8000
+consumes:
+    - application/json
+    - application/xml
+    - application/gob
+produces:
+    - application/json
+    - application/xml
+    - application/gob
+paths:
+    /openapi.json:
+        get:
+            tags:
+                - todo
+            summary: Download ./gen/http/openapi.json
+            operationId: todo#/openapi.json
+            responses:
+                "200":
+                    description: File downloaded
+                    schema:
+                        type: file
+            schemes:
+                - http
+    /todo/list:
+        get:
+            tags:
+                - todo
+            summary: listTasks todo
+            operationId: todo#listTasks
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        type: array
+                        items:
+                            $ref: '#/definitions/TaskResponse'
+            schemes:
+                - http
+    /todo/task:
+        post:
+            tags:
+                - todo
+            summary: createTask todo
+            operationId: todo#createTask
+            parameters:
+                - name: CreateTaskRequestBody
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/TodoCreateTaskRequestBody'
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/TodoCreateTaskResponseBody'
+            schemes:
+                - http
+    /todo/task/{id}/complete:
+        post:
+            tags:
+                - todo
+            summary: completeTask todo
+            operationId: todo#completeTask
+            parameters:
+                - name: id
+                  in: path
+                  description: id of task
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/TodoCompleteTaskResponseBody'
+            schemes:
+                - http
+    /todo/task/{id}/revert:
+        post:
+            tags:
+                - todo
+            summary: revertTask todo
+            operationId: todo#revertTask
+            parameters:
+                - name: id
+                  in: path
+                  description: id of task
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/TodoRevertTaskResponseBody'
+            schemes:
+                - http
+definitions:
+    TaskResponse:
+        title: TaskResponse
+        type: object
+        properties:
+            completed:
+                type: boolean
+                description: status of task
+                example: false
+            id:
+                type: string
+                description: id of task
+                example: Optio velit sapiente voluptas vitae ex quas.
+            name:
+                type: string
+                description: name of task
+                example: Ea provident voluptates.
+        example:
+            completed: false
+            id: Quam voluptatem sit voluptatem officia est.
+            name: Ex voluptatibus autem.
+    TodoCompleteTaskResponseBody:
+        title: TodoCompleteTaskResponseBody
+        type: object
+        properties:
+            completed:
+                type: boolean
+                description: status of task
+                example: false
+            id:
+                type: string
+                description: id of task
+                example: Ad dolores nisi est accusantium.
+            name:
+                type: string
+                description: name of task
+                example: Odit consectetur.
+        example:
+            completed: false
+            id: Earum illum.
+            name: Totam earum illo fugit placeat possimus quo.
+    TodoCreateTaskRequestBody:
+        title: TodoCreateTaskRequestBody
+        type: object
+        properties:
+            name:
+                type: string
+                description: name of task
+                example: Aliquid odit velit fugiat.
+        example:
+            name: Velit quis incidunt ut.
+    TodoCreateTaskResponseBody:
+        title: TodoCreateTaskResponseBody
+        type: object
+        properties:
+            completed:
+                type: boolean
+                description: status of task
+                example: false
+            id:
+                type: string
+                description: id of task
+                example: Sit omnis molestiae similique eos qui ea.
+            name:
+                type: string
+                description: name of task
+                example: Labore vel est sit repellendus cum.
+        example:
+            completed: false
+            id: Dolor impedit officiis et repellat.
+            name: Voluptates omnis exercitationem recusandae natus molestiae.
+    TodoRevertTaskResponseBody:
+        title: TodoRevertTaskResponseBody
+        type: object
+        properties:
+            completed:
+                type: boolean
+                description: status of task
+                example: false
+            id:
+                type: string
+                description: id of task
+                example: Voluptas doloremque.
+            name:
+                type: string
+                description: name of task
+                example: Aut inventore laudantium fugiat iusto.
+        example:
+            completed: true
+            id: Officia assumenda ut ut quia.
+            name: Rerum sed voluptatem qui assumenda ipsum consequatur.

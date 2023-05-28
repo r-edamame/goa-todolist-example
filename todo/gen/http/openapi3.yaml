@@ -1,0 +1,167 @@
+openapi: 3.0.3
+info:
+    title: todo app
+    description: application for management tasks
+    version: "1.0"
+servers:
+    - url: http://localhost:8000
+paths:
+    /openapi.json:
+        get:
+            tags:
+                - todo
+            summary: Download ./gen/http/openapi.json
+            operationId: todo#/openapi.json
+            responses:
+                "200":
+                    description: File downloaded
+    /todo/list:
+        get:
+            tags:
+                - todo
+            summary: listTasks todo
+            operationId: todo#listTasks
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/Task'
+                                example:
+                                    - completed: true
+                                      id: Sunt eum exercitationem.
+                                      name: Blanditiis iure voluptas.
+                                    - completed: true
+                                      id: Sunt eum exercitationem.
+                                      name: Blanditiis iure voluptas.
+                                    - completed: true
+                                      id: Sunt eum exercitationem.
+                                      name: Blanditiis iure voluptas.
+                                    - completed: true
+                                      id: Sunt eum exercitationem.
+                                      name: Blanditiis iure voluptas.
+                            example:
+                                - completed: true
+                                  id: Sunt eum exercitationem.
+                                  name: Blanditiis iure voluptas.
+                                - completed: true
+                                  id: Sunt eum exercitationem.
+                                  name: Blanditiis iure voluptas.
+                                - completed: true
+                                  id: Sunt eum exercitationem.
+                                  name: Blanditiis iure voluptas.
+    /todo/task:
+        post:
+            tags:
+                - todo
+            summary: createTask todo
+            operationId: todo#createTask
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateTaskRequestBody'
+                        example:
+                            name: Numquam distinctio.
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Task'
+                            example:
+                                completed: true
+                                id: Quasi facere.
+                                name: Minima mollitia accusantium ut quis voluptatem vel.
+    /todo/task/{id}/complete:
+        post:
+            tags:
+                - todo
+            summary: completeTask todo
+            operationId: todo#completeTask
+            parameters:
+                - name: id
+                  in: path
+                  description: id of task
+                  required: true
+                  schema:
+                    type: string
+                    description: id of task
+                    example: Sit sit ex et.
+                  example: Dolores quis rerum laudantium voluptatem magni.
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Task'
+                            example:
+                                completed: true
+                                id: Velit ea.
+                                name: Voluptatum molestias assumenda.
+    /todo/task/{id}/revert:
+        post:
+            tags:
+                - todo
+            summary: revertTask todo
+            operationId: todo#revertTask
+            parameters:
+                - name: id
+                  in: path
+                  description: id of task
+                  required: true
+                  schema:
+                    type: string
+                    description: id of task
+                    example: Totam est distinctio facilis sint.
+                  example: Aut eaque maiores distinctio laudantium corrupti autem.
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Task'
+                            example:
+                                completed: false
+                                id: Itaque eveniet consequatur aut ipsam et.
+                                name: Officia vero fugiat cumque.
+components:
+    schemas:
+        CreateTaskRequestBody:
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: name of task
+                    example: Sed et eum ipsum quam recusandae.
+            example:
+                name: Velit enim aspernatur et.
+        Task:
+            type: object
+            properties:
+                completed:
+                    type: boolean
+                    description: status of task
+                    example: false
+                id:
+                    type: string
+                    description: id of task
+                    example: Non assumenda aliquid perspiciatis voluptatem ut.
+                name:
+                    type: string
+                    description: name of task
+                    example: Amet architecto aut culpa quisquam assumenda.
+            example:
+                completed: false
+                id: Culpa ipsum optio at.
+                name: Ea nulla saepe et sapiente.
+tags:
+    - name: todo
+      description: todo service for management tasks
