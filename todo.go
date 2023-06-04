@@ -3,7 +3,10 @@ package todoapi
 import (
 	"context"
 	"log"
-	domain "todo/domain"
+
+	"todo/domain/model"
+	"todo/domain/repo"
+	"todo/domain/usecases"
 	todo "todo/gen/todo"
 )
 
@@ -11,32 +14,39 @@ import (
 // The example methods log the requests and return zero values.
 type todosrvc struct {
 	logger   *log.Logger
-	taskRepo domain.TaskRepo
+	taskRepo repo.TaskRepo
 }
 
 // NewTodo returns the todo service implementation.
 func NewTodo(logger *log.Logger) todo.Service {
-	return &todosrvc{logger, domain.NewInmemoryTaskRepo()}
+	taskRepo := repo.NewInmemoryTaskRepo()
+	return &todosrvc{logger, &taskRepo}
+}
+
+func convertTaskForResult(task *model.Task) *todo.Task {
+	id, name, completed := task.Id(), task.Name(), task.Completed()
+	return &todo.Task{
+		ID:        &id,
+		Name:      &name,
+		Completed: &completed,
+	}
 }
 
 // ListTasks implements listTasks.
 func (s *todosrvc) ListTasks(ctx context.Context) (res []*todo.Task, err error) {
 	s.logger.Print("todo.listTasks")
 
-	list, err := s.taskRepo.ListTasks()
+	list, err := s.taskRepo.GetTaskList()
 	if err != nil {
 		return
 	}
 
 	tasks := list.All()
+	s.logger.Println(tasks)
 	res = make([]*todo.Task, len(tasks))
 
 	for i, task := range tasks {
-		res[i] = &todo.Task{
-			ID:        &task.Id,
-			Name:      &task.Name,
-			Completed: &task.Completed,
-		}
+		res[i] = convertTaskForResult(task)
 	}
 
 	return
@@ -46,16 +56,12 @@ func (s *todosrvc) ListTasks(ctx context.Context) (res []*todo.Task, err error) 
 func (s *todosrvc) CreateTask(ctx context.Context, p *todo.CreateTaskPayload) (res *todo.Task, err error) {
 	s.logger.Print("todo.createTask")
 
-	task, err := domain.CreateTask(s.taskRepo, *p.Name)
+	task, err := usecases.CreateTask(s.taskRepo, *p.Name)
 	if err != nil {
 		return
 	}
 
-	res = &todo.Task{
-		ID:        &task.Id,
-		Name:      &task.Name,
-		Completed: &task.Completed,
-	}
+	res = convertTaskForResult(task)
 	return
 }
 
@@ -63,16 +69,12 @@ func (s *todosrvc) CreateTask(ctx context.Context, p *todo.CreateTaskPayload) (r
 func (s *todosrvc) CompleteTask(ctx context.Context, p *todo.CompleteTaskPayload) (res *todo.Task, err error) {
 	s.logger.Print("todo.completeTask")
 
-	task, err := domain.CompleteTask(s.taskRepo, *p.ID)
+	task, err := usecases.CompleteTask(s.taskRepo, *p.ID)
 	if err != nil {
 		return
 	}
 
-	res = &todo.Task{
-		ID:        &task.Id,
-		Name:      &task.Name,
-		Completed: &task.Completed,
-	}
+	res = convertTaskForResult(task)
 	return
 }
 
@@ -80,15 +82,11 @@ func (s *todosrvc) CompleteTask(ctx context.Context, p *todo.CompleteTaskPayload
 func (s *todosrvc) RevertTask(ctx context.Context, p *todo.RevertTaskPayload) (res *todo.Task, err error) {
 	s.logger.Print("todo.revertTask")
 
-	task, err := domain.RevertTask(s.taskRepo, *p.ID)
+	task, err := usecases.RevertTask(s.taskRepo, *p.ID)
 	if err != nil {
 		return
 	}
 
-	res = &todo.Task{
-		ID:        &task.Id,
-		Name:      &task.Id,
-		Completed: &task.Completed,
-	}
+	res = convertTaskForResult(task)
 	return
 }
